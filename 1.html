@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tick Cross Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ---- Menu Screen ---- */
+    .menu {
+      text-align: center;
+    }
+
+    .menu h2 {
+      font-size: 1.4rem;
+      color: #ccc;
+      margin: 1.5rem 0 1rem;
+    }
+
+    .menu-options {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .menu-btn {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.25s;
+      min-width: 160px;
+    }
+
+    .menu-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #ffd200;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .menu-btn.selected {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+      border-color: transparent;
+    }
+
+    .menu-btn .icon {
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .difficulty-section {
+      margin-top: 0.5rem;
+    }
+
+    .diff-btn {
+      padding: 0.7rem 1.5rem;
+      min-width: 120px;
+    }
+
+    .diff-btn.easy { border-color: #2ecc71; }
+    .diff-btn.easy:hover, .diff-btn.easy.selected { background: #2ecc71; color: #1a1a2e; border-color: #2ecc71; }
+    .diff-btn.medium { border-color: #f39c12; }
+    .diff-btn.medium:hover, .diff-btn.medium.selected { background: #f39c12; color: #1a1a2e; border-color: #f39c12; }
+    .diff-btn.hard { border-color: #e74c3c; }
+    .diff-btn.hard:hover, .diff-btn.hard.selected { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+
+    .start-btn {
+      margin-top: 1.5rem;
+      padding: 0.9rem 3rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 210, 0, 0.4);
+    }
+
+    .start-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ---- Game Screen ---- */
+    .game-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .mode-label {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .status {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      min-height: 2rem;
+      color: #ccc;
+    }
+
+    .status .highlight {
+      font-weight: bold;
+      color: #ffd200;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 8px;
+    }
+
+    .cell {
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, border-color 0.2s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken):not(.locked) {
+      background: rgba(255, 255, 255, 0.12);
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .cell.taken, .cell.locked {
+      cursor: default;
+    }
+
+    .cell .x {
+      color: #ff6b6b;
+      text-shadow: 0 0 12px rgba(255, 107, 107, 0.5);
+    }
+
+    .cell .o {
+      color: #48dbfb;
+      text-shadow: 0 0 12px rgba(72, 219, 251, 0.5);
+    }
+
+    .cell.win-cell {
+      background: rgba(255, 210, 0, 0.15);
+      border-color: #ffd200;
+      animation: pulse 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { box-shadow: 0 0 8px rgba(255, 210, 0, 0.3); }
+      to   { box-shadow: 0 0 20px rgba(255, 210, 0, 0.6); }
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cell span {
+      animation: pop 0.3s ease-out;
+      display: inline-block;
+    }
+
+    .controls {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 0.7rem 1.8rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-restart {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+    }
+
+    .btn-menu {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-menu:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+
+    .score-item {
+      text-align: center;
+    }
+
+    .score-item .label {
+      font-size: 0.85rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-item .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .score-x .value { color: #ff6b6b; }
+    .score-o .value { color: #48dbfb; }
+    .score-d .value { color: #888; }
+
+    @media (max-width: 480px) {
+      .board {
+        grid-template-columns: repeat(3, 90px);
+        grid-template-rows: repeat(3, 90px);
+      }
+      .cell {
+        width: 90px;
+        height: 90px;
+        font-size: 2.2rem;
+      }
+      h1 { font-size: 1.8rem; }
+      .menu-btn { min-width: 130px; padding: 0.8rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======== MENU SCREEN ======== -->
+  <div id="menu-screen" class="menu">
+    <h1>Tick Cross</h1>
+    <h2>Choose Game Mode</h2>
+    <div class="menu-options">
+      <button class="menu-btn" onclick="selectMode('human')">
+        <span class="icon">&#128101;</span>
+        vs Human
+      </button>
+      <button class="menu-btn" onclick="selectMode('bot')">
+        <span class="icon">&#129302;</span>
+        vs Bot
+      </button>
+    </div>
+
+    <div id="difficulty-section" class="difficulty-section hidden">
+      <h2>Select Difficulty</h2>
+      <div class="menu-options">
+        <button class="menu-btn diff-btn easy" onclick="selectDifficulty('easy')">
+          Easy
+        </button>
+        <button class="menu-btn diff-btn medium" onclick="selectDifficulty('medium')">
+          Medium
+        </button>
+        <button class="menu-btn diff-btn hard" onclick="selectDifficulty('hard')">
+          Hard
+        </button>
+      </div>
+    </div>
+
+    <button id="start-btn" class="start-btn" disabled onclick="startGame()">
+      Start Game
+    </button>
+  </div>
+
+  <!-- ======== GAME SCREEN ======== -->
+  <div id="game-screen" class="game-screen hidden">
+    <h1>Tick Cross</h1>
+    <div class="mode-label" id="mode-label"></div>
+
+    <div class="scoreboard">
+      <div class="score-item score-x">
+        <div class="label" id="label-x">X (You)</div>
+        <div class="value" id="score-x">0</div>
+      </div>
+      <div class="score-item score-d">
+        <div class="label">Draws</div>
+        <div class="value" id="score-d">0</div>
+      </div>
+      <div class="score-item score-o">
+        <div class="label" id="label-o">O (Bot)</div>
+        <div class="value" id="score-o">0</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">
+      <span class="highlight">X</span>'s turn
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="controls">
+      <button class="btn-restart" onclick="resetGame()">New Game</button>
+      <button class="btn-restart" onclick="resetAll()">Reset Scores</button>
+      <button class="btn-menu" onclick="backToMenu()">Menu</button>
+    </div>
+  </div>
+
+  <script>
+    // ---- Constants ----
+    const WIN_COMBOS = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    // ---- State ----
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameOver = false;
+    let botThinking = false;
+    let scores = { X: 0, O: 0, D: 0 };
+    let gameMode = null;       // 'human' or 'bot'
+    let difficulty = null;     // 'easy', 'medium', 'hard'
+
+    // ---- DOM refs ----
+    const menuScreen = document.getElementById('menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const diffSection = document.getElementById('difficulty-section');
+    const startBtn = document.getElementById('start-btn');
+
+    // ---- Menu Logic ----
+    function selectMode(mode) {
+      gameMode = mode;
+      difficulty = null;
+      document.querySelectorAll('.menu-btn:not(.diff-btn)').forEach(b => b.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+
+      if (mode === 'bot') {
+        diffSection.classList.remove('hidden');
+        startBtn.disabled = true;
+      } else {
+        diffSection.classList.add('hidden');
+        startBtn.disabled = false;
+      }
+    }
+
+    function selectDifficulty(diff) {
+      difficulty = diff;
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      startBtn.disabled = false;
+    }
+
+    function startGame() {
+      if (!gameMode) return;
+      if (gameMode === 'bot' && !difficulty) return;
+
+      // Update labels
+      const modeLabel = document.getElementById('mode-label');
+      const labelX = document.getElementById('label-x');
+      const labelO = document.getElementById('label-o');
+
+      if (gameMode === 'human') {
+        modeLabel.textContent = 'Player vs Player';
+        labelX.textContent = 'X (P1)';
+        labelO.textContent = 'O (P2)';
+      } else {
+        const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+        modeLabel.textContent = 'Player vs Bot (' + diffLabel + ')';
+        labelX.textContent = 'X (You)';
+        labelO.textContent = 'O (Bot)';
+      }
+
+      scores = { X: 0, O: 0, D: 0 };
+      updateScores();
+      menuScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      resetGame();
+    }
+
+    function backToMenu() {
+      gameScreen.classList.add('hidden');
+      menuScreen.classList.remove('hidden');
+      // Reset menu selections
+      gameMode = null;
+      difficulty = null;
+      document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('selected'));
+      diffSection.classList.add('hidden');
+      startBtn.disabled = true;
+    }
+
+    // ---- Board Rendering ----
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      board.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (val) cell.classList.add('taken');
+        if (botThinking) cell.classList.add('locked');
+        cell.dataset.index = i;
+        if (val) {
+          const span = document.createElement('span');
+          span.className = val.toLowerCase();
+          span.textContent = val === 'X' ? '\u2716' : '\u25EF';
+          cell.appendChild(span);
+        }
+        cell.addEventListener('click', () => handleClick(i));
+        boardEl.appendChild(cell);
+      });
+    }
+
+    // ---- Game Logic ----
+    function handleClick(i) {
+      if (gameOver || board[i] || botThinking) return;
+      // In bot mode, only allow clicks when it's X's turn (human)
+      if (gameMode === 'bot' && currentPlayer === 'O') return;
+
+      makeMove(i);
+    }
+
+    function makeMove(i) {
+      board[i] = currentPlayer;
+      const winCombo = checkWin(currentPlayer);
+
+      if (winCombo) {
+        gameOver = true;
+        scores[currentPlayer]++;
+        updateScores();
+        renderBoard();
+        highlightWin(winCombo);
+        if (gameMode === 'bot') {
+          statusEl.innerHTML = currentPlayer === 'X'
+            ? '<span class="highlight">You</span> win! &#127881;'
+            : '<span class="highlight">Bot</span> wins!';
+        } else {
+          statusEl.innerHTML = '<span class="highlight">' + currentPlayer + '</span> wins! &#127881;';
+        }
+        return;
+      }
+
+      if (board.every(c => c)) {
+        gameOver = true;
+        scores.D++;
+        updateScores();
+        renderBoard();
+        statusEl.innerHTML = 'It\'s a <span class="highlight">draw</span>!';
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      renderBoard();
+
+      if (gameMode === 'bot' && currentPlayer === 'O') {
+        statusEl.innerHTML = '<span class="highlight">Bot</span> is thinking...';
+        botThinking = true;
+        renderBoard();
+        setTimeout(() => {
+          botThinking = false;
+          const move = getBotMove();
+          makeMove(move);
+        }, 400 + Math.random() * 400);
+      } else {
+        if (gameMode === 'bot') {
+          statusEl.innerHTML = '<span class="highlight">Your</span> turn';
+        } else {
+          statusEl.innerHTML = '<span class="highlight">' + currentPlayer + '</span>\'s turn';
+        }
+      }
+    }
+
+    function checkWin(player) {
+      for (const combo of WIN_COMBOS) {
+        if (combo.every(i => board[i] === player)) return combo;
+      }
+      return null;
+    }
+
+    function highlightWin(combo) {
+      const cells = boardEl.querySelectorAll('.cell');
+      combo.forEach(i => cells[i].classList.add('win-cell'));
+    }
+
+    function updateScores() {
+      document.getElementById('score-x').textContent = scores.X;
+      document.getElementById('score-o').textContent = scores.O;
+      document.getElementById('score-d').textContent = scores.D;
+    }
+
+    function resetGame() {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameOver = false;
+      botThinking = false;
+      if (gameMode === 'bot') {
+        statusEl.innerHTML = '<span class="highlight">Your</span> turn';
+      } else {
+        statusEl.innerHTML = '<span class="highlight">X</span>\'s turn';
+      }
+      renderBoard();
+    }
+
+    function resetAll() {
+      scores = { X: 0, O: 0, D: 0 };
+      updateScores();
+      resetGame();
+    }
+
+    // ---- Bot AI ----
+    function getBotMove() {
+      const empty = board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+      if (empty.length === 0) return -1;
+
+      if (difficulty === 'easy') return botEasy(empty);
+      if (difficulty === 'medium') return botMedium(empty);
+      return botHard(empty);
+    }
+
+    // Easy: fully random moves
+    function botEasy(empty) {
+      return empty[Math.floor(Math.random() * empty.length)];
+    }
+
+    // Medium: block wins & take wins, otherwise random
+    function botMedium(empty) {
+      // Try to win
+      const winMove = findWinningMove('O', empty);
+      if (winMove !== null) return winMove;
+      // Block opponent's win
+      const blockMove = findWinningMove('X', empty);
+      if (blockMove !== null) return blockMove;
+      // Take center if available
+      if (empty.includes(4)) return 4;
+      // Random
+      return empty[Math.floor(Math.random() * empty.length)];
+    }
+
+    // Hard: minimax — unbeatable
+    function botHard(empty) {
+      let bestScore = -Infinity;
+      let bestMove = empty[0];
+
+      for (const i of empty) {
+        board[i] = 'O';
+        const score = minimax(board, 0, false, -Infinity, Infinity);
+        board[i] = '';
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = i;
+        }
+      }
+      return bestMove;
+    }
+
+    function minimax(b, depth, isMaximizing, alpha, beta) {
+      if (checkWin('O')) return 10 - depth;
+      if (checkWin('X')) return depth - 10;
+      const empty = b.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+      if (empty.length === 0) return 0;
+
+      if (isMaximizing) {
+        let best = -Infinity;
+        for (const i of empty) {
+          b[i] = 'O';
+          const score = minimax(b, depth + 1, false, alpha, beta);
+          b[i] = '';
+          best = Math.max(best, score);
+          alpha = Math.max(alpha, score);
+          if (beta <= alpha) break;
+        }
+        return best;
+      } else {
+        let best = Infinity;
+        for (const i of empty) {
+          b[i] = 'X';
+          const score = minimax(b, depth + 1, true, alpha, beta);
+          b[i] = '';
+          best = Math.min(best, score);
+          beta = Math.min(beta, score);
+          if (beta <= alpha) break;
+        }
+        return best;
+      }
+    }
+
+    function findWinningMove(player, empty) {
+      for (const i of empty) {
+        board[i] = player;
+        if (checkWin(player)) {
+          board[i] = '';
+          return i;
+        }
+        board[i] = '';
+      }
+      return null;
+    }
+  </script>
+</body>
+</html>
