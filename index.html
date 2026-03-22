@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tick Cross Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #f7971e, #ffd200);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+    }
+
+    .status {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      min-height: 2rem;
+      color: #ccc;
+    }
+
+    .status .highlight {
+      font-weight: bold;
+      color: #ffd200;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 8px;
+    }
+
+    .cell {
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, border-color 0.2s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken) {
+      background: rgba(255, 255, 255, 0.12);
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .cell.taken {
+      cursor: default;
+    }
+
+    .cell .x {
+      color: #ff6b6b;
+      text-shadow: 0 0 12px rgba(255, 107, 107, 0.5);
+    }
+
+    .cell .o {
+      color: #48dbfb;
+      text-shadow: 0 0 12px rgba(72, 219, 251, 0.5);
+    }
+
+    .cell.win-cell {
+      background: rgba(255, 210, 0, 0.15);
+      border-color: #ffd200;
+      animation: pulse 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { box-shadow: 0 0 8px rgba(255, 210, 0, 0.3); }
+      to   { box-shadow: 0 0 20px rgba(255, 210, 0, 0.6); }
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cell span {
+      animation: pop 0.3s ease-out;
+      display: inline-block;
+    }
+
+    .controls {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      padding: 0.7rem 1.8rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-restart {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #1a1a2e;
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+
+    .score-item {
+      text-align: center;
+    }
+
+    .score-item .label {
+      font-size: 0.85rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-item .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .score-x .value { color: #ff6b6b; }
+    .score-o .value { color: #48dbfb; }
+    .score-d .value { color: #888; }
+
+    @media (max-width: 480px) {
+      .board {
+        grid-template-columns: repeat(3, 90px);
+        grid-template-rows: repeat(3, 90px);
+      }
+      .cell {
+        width: 90px;
+        height: 90px;
+        font-size: 2.2rem;
+      }
+      h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Tick Cross</h1>
+
+  <div class="scoreboard">
+    <div class="score-item score-x">
+      <div class="label">X Wins</div>
+      <div class="value" id="score-x">0</div>
+    </div>
+    <div class="score-item score-d">
+      <div class="label">Draws</div>
+      <div class="value" id="score-d">0</div>
+    </div>
+    <div class="score-item score-o">
+      <div class="label">O Wins</div>
+      <div class="value" id="score-o">0</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    <span class="highlight">X</span>'s turn
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="controls">
+    <button class="btn-restart" onclick="resetGame()">New Game</button>
+    <button class="btn-restart" onclick="resetAll()">Reset Scores</button>
+  </div>
+
+  <script>
+    const WIN_COMBOS = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameOver = false;
+    let scores = { X: 0, O: 0, D: 0 };
+
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      board.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (val ? ' taken' : '');
+        cell.dataset.index = i;
+        if (val) {
+          const span = document.createElement('span');
+          span.className = val.toLowerCase();
+          span.textContent = val === 'X' ? '\u2716' : '\u25EF';
+          cell.appendChild(span);
+        }
+        cell.addEventListener('click', () => handleClick(i));
+        boardEl.appendChild(cell);
+      });
+    }
+
+    function handleClick(i) {
+      if (gameOver || board[i]) return;
+      board[i] = currentPlayer;
+      const winCombo = checkWin(currentPlayer);
+      if (winCombo) {
+        gameOver = true;
+        scores[currentPlayer]++;
+        updateScores();
+        renderBoard();
+        highlightWin(winCombo);
+        statusEl.innerHTML = `<span class="highlight">${currentPlayer}</span> wins! 🎉`;
+        return;
+      }
+      if (board.every(c => c)) {
+        gameOver = true;
+        scores.D++;
+        updateScores();
+        renderBoard();
+        statusEl.innerHTML = `It's a <span class="highlight">draw</span>!`;
+        return;
+      }
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      renderBoard();
+      statusEl.innerHTML = `<span class="highlight">${currentPlayer}</span>'s turn`;
+    }
+
+    function checkWin(player) {
+      for (const combo of WIN_COMBOS) {
+        if (combo.every(i => board[i] === player)) return combo;
+      }
+      return null;
+    }
+
+    function highlightWin(combo) {
+      const cells = boardEl.querySelectorAll('.cell');
+      combo.forEach(i => cells[i].classList.add('win-cell'));
+    }
+
+    function updateScores() {
+      document.getElementById('score-x').textContent = scores.X;
+      document.getElementById('score-o').textContent = scores.O;
+      document.getElementById('score-d').textContent = scores.D;
+    }
+
+    function resetGame() {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameOver = false;
+      statusEl.innerHTML = `<span class="highlight">X</span>'s turn`;
+      renderBoard();
+    }
+
+    function resetAll() {
+      scores = { X: 0, O: 0, D: 0 };
+      updateScores();
+      resetGame();
+    }
+
+    renderBoard();
+  </script>
+</body>
+</html>
